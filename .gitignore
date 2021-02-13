@@ -1,0 +1,7 @@
+Hidden files
+.*
+!.git*
+
+# Rust
+/target
+Cargo.lock
