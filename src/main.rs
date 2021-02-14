@@ -127,6 +127,14 @@ fn main() -> io::Result<()> {
 				eprintln!("<6>Write to log detected. Performing incremental upload.");
 				upload(&mut agent, &url, &key, &mut log);
 			},
+			DebouncedEvent::NoticeRemove(_) | DebouncedEvent::Remove(_) => {
+				eprintln!("<2>Log file has been removed. Bailing out.");
+				panic!();
+			},
+			DebouncedEvent::Error(err, _) => {
+				eprintln!("<2>Error detected while watching for file changes: {}", err);
+				panic!();
+			},
 			_ => { }
 		}
 	}
