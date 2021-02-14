@@ -60,7 +60,10 @@ impl Iterator for RecordsReader {
 	fn next(&mut self) -> Option<String> {
 		self.buffer.resize(self.length + Self::CHUNK_SIZE, 0);
 		let tail = &mut self.buffer[self.length..];
-		let rlen = self.file.read(tail).unwrap();
+		let rlen = self.file.read(tail).unwrap_or_else(|err| {
+			eprintln!("Failed to read from log file: {}", err);
+			exit(74);
+		});
 		self.length += rlen;
 
 		let clen = self.complete();
@@ -68,7 +71,10 @@ impl Iterator for RecordsReader {
 		if clen == 0 {
 			None
 		} else {
-			let rec = String::from(str::from_utf8(&self.buffer[0..clen]).unwrap());
+			let rec = String::from(str::from_utf8(&self.buffer[0..clen]).unwrap_or_else(|err| {
+				eprintln!("<2>Unable to parse chunk as UTF-8: {}", err);
+				exit(65);
+			}));
 
 			// Move remaining items to the front
 			for idx in 0..(self.length - clen) {
@@ -99,7 +105,10 @@ fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader
 			"key": key,
 			"type": "adif",
 			"string": rec
-		})).expect("Failed to upload log records");
+		})).unwrap_or_else(|err| {
+			eprintln!("<2>Failed to upload log records: {}", err);
+			exit(74);
+		});
 
 		eprintln!("<7>Uploaded {} bytes of log data.", rec.len());
 	}
@@ -119,24 +128,47 @@ fn main() -> io::Result<()> {
 	let mut args = env::args();
 
 	if args.len() <= 1 {
-		println!("Usage: {} [base URL] [API key file] [ADIF log file]", args.next().unwrap());
+		eprintln!("Usage: {} [base URL] [API key file] [ADIF log file]", args.next().unwrap());
 		exit(64);
 	}
 
-	let url = api_url(&args.nth(1).expect("Missing CloudLog base URL"))
-	          .expect("Failed to generate API URL");
-	let key = read_key(&args.next().expect("Missing API key file path"))
-	          .expect("Failed to read API key");
+	let url = api_url(&args.nth(1).unwrap_or_else(|| {
+		eprintln!("Missing CloudLog base URL");
+		exit(64);
+	})).unwrap_or_else(|err| {
+		eprintln!("Failed to construct QSO API URL: {}", err);
+		exit(64);
+	});
 
-	let log_path = args.next().expect("Missing log file path");
-	let mut log = RecordsReader::new(File::open(&log_path).expect("Failed to open log file"));
+	let key = read_key(&args.next().unwrap_or_else(|| {
+		eprintln!("Missing API key file path");
+		exit(64);
+	})).unwrap_or_else(|err| {
+		eprintln!("Failed to read API key: {}", err);
+		exit(66);
+	});
+
+	let log_path = args.next().unwrap_or_else(|| {
+		eprintln!("Missing log file path");
+		exit(64);
+	});
+
+	let mut log = RecordsReader::new(File::open(&log_path).unwrap_or_else(|err| {
+		eprintln!("Failed to open log file: {}", err);
+		exit(66);
+	}));
 
 	let (tx, rx) = channel();
-	let mut watcher = watcher(tx, Duration::from_secs(60))
-	                  .expect("Failed to set up file watcher");
+	let mut watcher = watcher(tx, Duration::from_secs(60)).unwrap_or_else(|err| {
+		eprintln!("Failed to set up file watcher: {}", err);
+		exit(71);
+	});
 
-	watcher.watch(&log_path, RecursiveMode::NonRecursive)
-	       .expect("Unable to watch log file for changes");
+
+	watcher.watch(&log_path, RecursiveMode::NonRecursive).unwrap_or_else(|err| {
+		eprintln!("Unable to watch log file for changes: {}", err);
+		exit(71);
+	});
 
 	let mut agent = Agent::new();
 	eprintln!("<6>Performing initial full log upload.");
@@ -150,11 +182,11 @@ fn main() -> io::Result<()> {
 			},
 			DebouncedEvent::NoticeRemove(_) | DebouncedEvent::Remove(_) => {
 				eprintln!("<2>Log file has been removed. Bailing out.");
-				panic!();
+				exit(74);
 			},
 			DebouncedEvent::Error(err, _) => {
 				eprintln!("<2>Error detected while watching for file changes: {}", err);
-				panic!();
+				exit(71);
 			},
 			_ => { }
 		}
