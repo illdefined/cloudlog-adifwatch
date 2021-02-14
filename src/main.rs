@@ -86,6 +86,8 @@ fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader
 			"type": "adif",
 			"string": rec
 		})).expect("Failed to upload log records");
+
+		eprintln!("<7>Uploaded {} bytes of log data.", rec.len());
 	}
 }
 
@@ -109,6 +111,8 @@ fn main() -> io::Result<()> {
 	let mut log = RecordsReader::new(File::open(&log_path).expect("Failed to open log file"));
 
 	let mut agent = Agent::new();
+
+	eprintln!("<6>Performing initial full log upload.");
 	upload(&mut agent, &url, &key, &mut log);
 
 	let (tx, rx) = channel();
@@ -120,7 +124,10 @@ fn main() -> io::Result<()> {
 
 	loop {
 		match rx.recv().unwrap() {
-			DebouncedEvent::Write(_) => { upload(&mut agent, &url, &key, &mut log); },
+			DebouncedEvent::Write(_) => {
+				eprintln!("<6>Write to log detected. Performing incremental upload.");
+				upload(&mut agent, &url, &key, &mut log);
+			},
 			_ => { }
 		}
 	}
