@@ -3,7 +3,7 @@ Description=Watch ADIF log and upload to CloudLog
 
 [Service]
 Type=exec
-ExecStart=sh -c '~/.cargo/bin/cloudlog-adifwatch https://fernschreibstelle.de $${XDG_CONFIG_HOME:-~/.config}/cloudlog-adifwatch/key.txt $${XDG_DATA_HOME:-~/.local/share}/WSJT-X/wsjtx_log.adi'
+ExecStart=sh -c 'exec ~/.cargo/bin/cloudlog-adifwatch https://fernschreibstelle.de $${XDG_CONFIG_HOME:-~/.config}/cloudlog-adifwatch/key.txt $${XDG_DATA_HOME:-~/.local/share}/WSJT-X/wsjtx_log.adi'
 Restart=on-failure
 RestartSec=1m
 
