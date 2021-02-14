@@ -4,7 +4,7 @@ version = "0.0.2"
 authors = ["Mikael Voss <mvs@nya.yt>"]
 edition = "2018"
 
-description = "Automatic upload of ADIF log to CloudLog"
+description = "Automatic upload of ADIF log to Cloudlog"
 readme = "README.md"
 repository = "https://github.com/illdefined/cloudlog-adifwatch"
 
