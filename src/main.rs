@@ -24,6 +24,8 @@ struct RecordsReader {
 }
 
 impl RecordsReader {
+	const CHUNK_SIZE: usize = 8192;
+
 	fn new(file: File) -> Self {
 		Self {
 			file: file,
@@ -50,7 +52,7 @@ impl Iterator for RecordsReader {
 	type Item = String;
 
 	fn next(&mut self) -> Option<String> {
-		self.buffer.resize(self.length + 8192, 0);
+		self.buffer.resize(self.length + Self::CHUNK_SIZE, 0);
 		let tail = &mut self.buffer[self.length..];
 		let rlen = self.file.read(tail).unwrap();
 		self.length += rlen;
