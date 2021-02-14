@@ -110,17 +110,16 @@ fn main() -> io::Result<()> {
 	let log_path = args.next().expect("Missing log file path");
 	let mut log = RecordsReader::new(File::open(&log_path).expect("Failed to open log file"));
 
-	let mut agent = Agent::new();
-
-	eprintln!("<6>Performing initial full log upload.");
-	upload(&mut agent, &url, &key, &mut log);
-
 	let (tx, rx) = channel();
 	let mut watcher = watcher(tx, Duration::from_secs(60))
 	                  .expect("Failed to set up file watcher");
 
 	watcher.watch(&log_path, RecursiveMode::NonRecursive)
 	       .expect("Unable to watch log file for changes");
+
+	let mut agent = Agent::new();
+	eprintln!("<6>Performing initial full log upload.");
+	upload(&mut agent, &url, &key, &mut log);
 
 	loop {
 		match rx.recv().unwrap() {
