@@ -26,7 +26,7 @@ struct RecordsReader {
 
 impl RecordsReader {
 	/// Read chunk size
-	const CHUNK_SIZE: usize = 8192;
+	const CHUNK_SIZE: usize = 128 * 1024;
 
 	/// Create new records reader
 	fn new(file: File) -> Self {
