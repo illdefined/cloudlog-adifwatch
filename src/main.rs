@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::{self, BufReader};
 use std::io::prelude::*;
 use std::option::Option;
+use std::process::exit;
 use std::result::Result;
 use std::time::Duration;
 use std::str;
@@ -116,6 +117,11 @@ fn api_url(base: &str) -> Result<Url, url::ParseError> {
 
 fn main() -> io::Result<()> {
 	let mut args = env::args();
+
+	if args.len() <= 1 {
+		println!("Usage: {} [base URL] [API key file] [ADIF log file]", args.next().unwrap());
+		exit(64);
+	}
 
 	let url = api_url(&args.nth(1).expect("Missing CloudLog base URL"))
 	          .expect("Failed to generate API URL");
