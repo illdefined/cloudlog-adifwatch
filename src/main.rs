@@ -17,6 +17,7 @@ use regex::bytes::Regex;
 use ureq::Agent;
 use url::Url;
 
+/// ADIF records reader
 struct RecordsReader {
 	file: File,
 	buffer: Vec<u8>,
@@ -24,8 +25,10 @@ struct RecordsReader {
 }
 
 impl RecordsReader {
+	/// Read chunk size
 	const CHUNK_SIZE: usize = 8192;
 
+	/// Create new records reader
 	fn new(file: File) -> Self {
 		Self {
 			file: file,
@@ -34,12 +37,13 @@ impl RecordsReader {
 		}
 	}
 
+	/// Length of longest chunk of complete records in the buffer
 	fn complete(&self) -> usize {
 		lazy_static! {
 			static ref RE: Regex = Regex::new(r"(?is-u).*<eor>[\r\n]*").unwrap();
 		}
 
-		/* Find last complete record */
+		// Find last complete record
 		match RE.find_iter(&self.buffer[..self.length]).last() {
 			Some(m) => m.end(),
 			None => 0
@@ -51,6 +55,7 @@ impl RecordsReader {
 impl Iterator for RecordsReader {
 	type Item = String;
 
+	/// Read a chunk of complete ADIF records
 	fn next(&mut self) -> Option<String> {
 		self.buffer.resize(self.length + Self::CHUNK_SIZE, 0);
 		let tail = &mut self.buffer[self.length..];
@@ -64,7 +69,7 @@ impl Iterator for RecordsReader {
 		} else {
 			let rec = String::from(str::from_utf8(&self.buffer[0..clen]).unwrap());
 
-			/* Move remaining items to the front */
+			// Move remaining items to the front
 			for idx in 0..(self.length - clen) {
 				self.buffer[idx] = self.buffer[clen + idx];
 			}
@@ -76,6 +81,7 @@ impl Iterator for RecordsReader {
 	}
 }
 
+/// Upload new records from log
 fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader) {
 	loop {
 		let rec = match log.next() {
@@ -98,10 +104,12 @@ fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader
 	}
 }
 
+/// Read API key from file
 fn read_key(path: &str) -> io::Result<String> {
 	Ok(BufReader::new(File::open(&path)?).lines().next().unwrap()?.trim().to_string())
 }
 
+/// Construct QSO API URL
 fn api_url(base: &str) -> Result<Url, url::ParseError> {
 	Ok(Url::parse(base)?.join("/api/qso")?)
 }
