@@ -5,6 +5,7 @@ authors = ["Mikael Voss <mvs@nya.yt>"]
 edition = "2018"
 
 description = "Automatic upload of ADIF log to CloudLog"
+readme = "README.md"
 repository = "https://github.com/illdefined/cloudlog-adifwatch"
 
 license = "MirOS"
