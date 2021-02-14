@@ -81,7 +81,12 @@ fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader
 			None => break
 		};
 
-		agent.request_url("PUT", url).send_json(ureq::json!({
+		agent.request_url("PUT", url)
+		     .set("User-Agent", concat!(env!("CARGO_PKG_NAME"),
+		                                "/", env!("CARGO_PKG_VERSION_MAJOR"),
+		                                ".", env!("CARGO_PKG_VERSION_MINOR"),
+		                                " (+", env!("CARGO_PKG_REPOSITORY"), ")"))
+		     .send_json(ureq::json!({
 			"key": key,
 			"type": "adif",
 			"string": rec
