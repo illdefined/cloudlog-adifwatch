@@ -159,7 +159,7 @@ fn main() -> io::Result<()> {
 	}));
 
 	let (tx, rx) = channel();
-	let mut watcher = watcher(tx, Duration::from_secs(60)).unwrap_or_else(|err| {
+	let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap_or_else(|err| {
 		eprintln!("Failed to set up file watcher: {}", err);
 		exit(71);
 	});
