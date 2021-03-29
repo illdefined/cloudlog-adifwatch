@@ -121,7 +121,7 @@ fn read_key(path: &str) -> io::Result<String> {
 
 /// Construct QSO API URL
 fn api_url(base: &str) -> Result<Url, url::ParseError> {
-	Ok(Url::parse(base)?.join("/api/qso")?)
+	Ok(Url::parse(base)?.join("api/qso")?)
 }
 
 fn main() -> io::Result<()> {
