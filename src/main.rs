@@ -32,7 +32,7 @@ impl RecordsReader {
 	/// Create new records reader
 	fn new(file: File) -> Self {
 		Self {
-			file: file,
+			file,
 			buffer: Vec::<u8>::new(),
 			length: 0
 		}
