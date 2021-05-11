@@ -90,12 +90,7 @@ impl Iterator for RecordsReader {
 
 /// Upload new records from log
 fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader) {
-	loop {
-		let rec = match log.next() {
-			Some(rec) => rec,
-			None => break
-		};
-
+	for rec in log {
 		agent.request_url("PUT", url)
 		     .set("User-Agent", concat!(env!("CARGO_PKG_NAME"),
 		                                "/", env!("CARGO_PKG_VERSION_MAJOR"),
