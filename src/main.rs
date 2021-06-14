@@ -1,10 +1,17 @@
+#![feature(
+	read_initializer,
+	maybe_uninit_slice,
+	vec_spare_capacity
+)]
+
 #[macro_use]
 extern crate lazy_static;
 
 use std::env;
 use std::fs::File;
-use std::io::{self, BufReader};
+use std::io::{self, Initializer, BufReader};
 use std::io::prelude::*;
+use std::mem::MaybeUninit;
 use std::option::Option;
 use std::process::exit;
 use std::result::Result;
@@ -22,7 +29,7 @@ use url::Url;
 struct RecordsReader {
 	file: File,
 	buffer: Vec<u8>,
-	length: usize
+	init: Initializer
 }
 
 impl RecordsReader {
@@ -32,9 +39,9 @@ impl RecordsReader {
 	/// Create new records reader
 	fn new(file: File) -> Self {
 		Self {
+			init: unsafe { file.initializer() },
 			file,
-			buffer: Vec::<u8>::new(),
-			length: 0
+			buffer: Vec::<u8>::new()
 		}
 	}
 
@@ -45,7 +52,7 @@ impl RecordsReader {
 		}
 
 		// Find last complete record
-		match RE.find_iter(&self.buffer[..self.length]).last() {
+		match RE.find_iter(&self.buffer).last() {
 			Some(m) => m.end(),
 			None => 0
 		}
@@ -58,30 +65,27 @@ impl Iterator for RecordsReader {
 
 	/// Read a chunk of complete ADIF records
 	fn next(&mut self) -> Option<String> {
-		self.buffer.resize(self.length + Self::CHUNK_SIZE, 0);
-		let tail = &mut self.buffer[self.length..];
+		self.buffer.reserve(Self::CHUNK_SIZE);
+		let tail = unsafe { MaybeUninit::slice_assume_init_mut(self.buffer.spare_capacity_mut()) };
+		self.init.initialize(tail);
 		let rlen = self.file.read(tail).unwrap_or_else(|err| {
 			eprintln!("Failed to read from log file: {}", err);
 			exit(74);
 		});
-		self.length += rlen;
 
+		unsafe { self.buffer.set_len(self.buffer.len() + rlen); }
 		let clen = self.complete();
 
 		if clen == 0 {
 			None
 		} else {
-			let rec = String::from(str::from_utf8(&self.buffer[0..clen]).unwrap_or_else(|err| {
+			let rec = String::from(str::from_utf8(&self.buffer[..clen]).unwrap_or_else(|err| {
 				eprintln!("<2>Unable to parse chunk as UTF-8: {}", err);
 				exit(65);
 			}));
 
 			// Move remaining items to the front
-			for idx in 0..(self.length - clen) {
-				self.buffer[idx] = self.buffer[clen + idx];
-			}
-
-			self.length -= clen;
+			self.buffer.drain(..clen);
 
 			Some(rec)
 		}
