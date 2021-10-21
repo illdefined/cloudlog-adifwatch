@@ -2,7 +2,7 @@
 name = "cloudlog-adifwatch"
 version = "0.0.9"
 authors = ["Mikael Voss <mvs@nya.yt>"]
-edition = "2018"
+edition = "2021"
 
 description = "Automatic upload of ADIF log to Cloudlog"
 readme = "README.md"
