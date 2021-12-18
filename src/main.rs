@@ -1,5 +1,4 @@
 #![feature(
-	read_initializer,
 	maybe_uninit_slice,
 	vec_spare_capacity
 )]
@@ -9,7 +8,7 @@ extern crate lazy_static;
 
 use std::env;
 use std::fs::File;
-use std::io::{self, Initializer, BufReader};
+use std::io::{self, BufReader};
 use std::io::prelude::*;
 use std::mem::MaybeUninit;
 use std::option::Option;
@@ -28,8 +27,7 @@ use url::Url;
 /// ADIF records reader
 struct RecordsReader {
 	file: File,
-	buffer: Vec<u8>,
-	init: Initializer
+	buffer: Vec<u8>
 }
 
 impl RecordsReader {
@@ -39,7 +37,6 @@ impl RecordsReader {
 	/// Create new records reader
 	fn new(file: File) -> Self {
 		Self {
-			init: unsafe { file.initializer() },
 			file,
 			buffer: Vec::<u8>::new()
 		}
@@ -67,7 +64,6 @@ impl Iterator for RecordsReader {
 	fn next(&mut self) -> Option<String> {
 		self.buffer.reserve(Self::CHUNK_SIZE);
 		let tail = unsafe { MaybeUninit::slice_assume_init_mut(self.buffer.spare_capacity_mut()) };
-		self.init.initialize(tail);
 		let rlen = self.file.read(tail).unwrap_or_else(|err| {
 			eprintln!("Failed to read from log file: {}", err);
 			exit(74);
