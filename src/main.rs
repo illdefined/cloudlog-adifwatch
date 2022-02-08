@@ -1,6 +1,5 @@
 #![feature(
 	maybe_uninit_slice,
-	vec_spare_capacity
 )]
 
 #[macro_use]
