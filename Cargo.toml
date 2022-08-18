@@ -16,8 +16,8 @@ categories = ["command-line-utilities"]
 [dependencies]
 lazy_static = "1.4"
 notify = "4.0"
-regex = "1.5"
-ureq = { version = "2.4", features = ["json"] }
+regex = "1.6"
+ureq = { version = "2.5", features = ["json"] }
 url = "2.2"
 
 [profile.release]
