@@ -13,15 +13,16 @@ automatically when the user logs in, enable it with `systemctl --user enable
 cloudlog-adifwatch.service`.
 
 By default the systemd unit expects the Cloudlog API key to be available in a file at
-`~/.config/cloudlog-adifwatch/key.txt` and watches the WSJT-X ADIF log file at
-`~/.local/share/WSJT-X/wsjtx_log.adi`. These paths can be adjusted as needed in the unit file.
+`~/.config/cloudlog-adifwatch/key.txt`, uses station profile ID 1 and watches the WSJT-X ADIF log
+file at `~/.local/share/WSJT-X/wsjtx_log.adi`. These paths can be adjusted as needed in the unit
+file.
 
 Alternatively, this tool can be started manually.
 
 ### Example
 
 ```
-cloudlog-adifwatch https://fernschreibstelle.de ~/.config/cloudlog-adifwatch/key.txt ~/.local/share/WSJT-X/wsjtx_log.adi
+cloudlog-adifwatch https://fernschreibstelle.de ~/.config/cloudlog-adifwatch/key.txt 1 ~/.local/share/WSJT-X/wsjtx_log.adi
 ```
 
 ## Implementation notes

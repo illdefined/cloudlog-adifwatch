@@ -88,7 +88,7 @@ impl Iterator for RecordsReader {
 }
 
 /// Upload new records from log
-fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader) {
+fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, profile: &str, log: &mut RecordsReader) {
 	for rec in log {
 		agent.request_url("PUT", url)
 		     .set("User-Agent", concat!(env!("CARGO_PKG_NAME"),
@@ -97,6 +97,7 @@ fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, log: &mut RecordsReader
 		                                " (+", env!("CARGO_PKG_REPOSITORY"), ")"))
 		     .send_json(ureq::json!({
 			"key": key,
+			"station_profile_id": profile,
 			"type": "adif",
 			"string": rec
 		})).unwrap_or_else(|err| {
@@ -122,7 +123,8 @@ fn main() -> io::Result<()> {
 	let mut args = env::args();
 
 	if args.len() <= 1 {
-		eprintln!("Usage: {} [base URL] [API key file] [ADIF log file]", args.next().unwrap());
+		eprintln!("Usage: {} [base URL] [API key file] [Profile ID] [ADIF log file]",
+		          args.next().unwrap());
 		exit(64);
 	}
 
@@ -140,6 +142,11 @@ fn main() -> io::Result<()> {
 	})).unwrap_or_else(|err| {
 		eprintln!("Failed to read API key: {}", err);
 		exit(66);
+	});
+
+	let profile = args.next().unwrap_or_else(|| {
+		eprintln!("Missing station profile ID");
+		exit(64);
 	});
 
 	let log_path = args.next().unwrap_or_else(|| {
@@ -165,13 +172,13 @@ fn main() -> io::Result<()> {
 
 	let mut agent = Agent::new();
 	eprintln!("<6>Performing initial full log upload.");
-	upload(&mut agent, &url, &key, &mut log);
+	upload(&mut agent, &url, &key, &profile, &mut log);
 
 	for ev in rx {
 		match ev {
 			Ok(Event { kind: EventKind::Modify(ModifyKind::Data(_)), paths: _, attrs: _ }) => {
 				eprintln!("<6>Change detected in log file. Checking for updates.");
-				upload(&mut agent, &url, &key, &mut log);
+				upload(&mut agent, &url, &key, &profile, &mut log);
 			},
 			Ok(Event { kind: EventKind::Remove(_), paths: _, attrs: _ }) => {
 				eprintln!("<2>Log file has been removed. Bailing out.");
