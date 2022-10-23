@@ -11,14 +11,14 @@ use std::io::{self, BufReader};
 use std::io::prelude::*;
 use std::mem::MaybeUninit;
 use std::option::Option;
+use std::path::Path;
 use std::process::exit;
 use std::result::Result;
-use std::time::Duration;
 use std::str;
 use std::string::String;
 use std::sync::mpsc::channel;
 
-use notify::{Watcher, RecursiveMode, DebouncedEvent, watcher};
+use notify::{Watcher, RecursiveMode, Event, EventKind, event::ModifyKind};
 use regex::bytes::Regex;
 use ureq::Agent;
 use url::Url;
@@ -153,13 +153,12 @@ fn main() -> io::Result<()> {
 	}));
 
 	let (tx, rx) = channel();
-	let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap_or_else(|err| {
+	let mut watcher = notify::recommended_watcher(tx).unwrap_or_else(|err| {
 		eprintln!("Failed to set up file watcher: {}", err);
 		exit(71);
 	});
 
-
-	watcher.watch(&log_path, RecursiveMode::NonRecursive).unwrap_or_else(|err| {
+	watcher.watch(Path::new(&log_path), RecursiveMode::NonRecursive).unwrap_or_else(|err| {
 		eprintln!("Unable to watch log file for changes: {}", err);
 		exit(71);
 	});
@@ -168,21 +167,23 @@ fn main() -> io::Result<()> {
 	eprintln!("<6>Performing initial full log upload.");
 	upload(&mut agent, &url, &key, &mut log);
 
-	loop {
-		match rx.recv().unwrap() {
-			DebouncedEvent::Write(_) => {
-				eprintln!("<6>Write to log detected. Performing incremental upload.");
+	for ev in rx {
+		match ev {
+			Ok(Event { kind: EventKind::Modify(ModifyKind::Data(_)), paths: _, attrs: _ }) => {
+				eprintln!("<6>Change detected in log file. Checking for updates.");
 				upload(&mut agent, &url, &key, &mut log);
 			},
-			DebouncedEvent::NoticeRemove(_) | DebouncedEvent::Remove(_) => {
+			Ok(Event { kind: EventKind::Remove(_), paths: _, attrs: _ }) => {
 				eprintln!("<2>Log file has been removed. Bailing out.");
 				exit(74);
 			},
-			DebouncedEvent::Error(err, _) => {
+			Ok(_) => { },
+			Err(err) => {
 				eprintln!("<2>Error detected while watching for file changes: {}", err);
 				exit(71);
-			},
-			_ => { }
+			}
 		}
 	}
+
+	Ok(())
 }
