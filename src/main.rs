@@ -123,7 +123,7 @@ fn main() -> io::Result<()> {
 	let mut args = env::args();
 
 	if args.len() <= 1 {
-		eprintln!("Usage: {} [base URL] [API key file] [Profile ID] [ADIF log file]",
+		eprintln!("Usage: {} [base URL] [API key file] [profile ID] [ADIF log file]",
 		          args.next().unwrap());
 		exit(64);
 	}
