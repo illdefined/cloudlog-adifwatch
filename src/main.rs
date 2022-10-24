@@ -175,6 +175,9 @@ fn main() -> io::Result<()> {
 	upload(&mut agent, &url, &key, &profile, &mut log);
 
 	for ev in rx {
+		#[cfg(debug_assertions)]
+		eprintln!("<7>Log file event: {:?}", ev);
+
 		match ev {
 			Ok(Event { kind: EventKind::Modify(ModifyKind::Data(_)), paths: _, attrs: _ }) => {
 				eprintln!("<6>Change detected in log file. Checking for updates.");
