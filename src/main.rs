@@ -111,7 +111,7 @@ fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, profile: &str, log: &mu
 
 /// Read API key from file
 fn read_key(path: &str) -> io::Result<String> {
-	Ok(BufReader::new(File::open(&path)?).lines().next().unwrap()?.trim().to_string())
+	Ok(BufReader::new(File::open(path)?).lines().next().unwrap()?.trim().to_string())
 }
 
 /// Construct QSO API URL
