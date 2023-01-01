@@ -55,7 +55,7 @@ checksum = "cca491388666e04d7248af3f60f0c40cfb0991c72205595d7c396e3510207d1a"
 
 [[package]]
 name = "cloudlog-adifwatch"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "lazy_static",
  "notify",
