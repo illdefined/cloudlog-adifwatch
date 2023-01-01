@@ -64,7 +64,7 @@ impl Iterator for RecordsReader {
 		self.buffer.reserve(Self::CHUNK_SIZE);
 		let tail = unsafe { MaybeUninit::slice_assume_init_mut(self.buffer.spare_capacity_mut()) };
 		let rlen = self.file.read(tail).unwrap_or_else(|err| {
-			eprintln!("Failed to read from log file: {}", err);
+			eprintln!("Failed to read from log file: {err}");
 			exit(74);
 		});
 
@@ -75,7 +75,7 @@ impl Iterator for RecordsReader {
 			None
 		} else {
 			let rec = String::from(str::from_utf8(&self.buffer[..clen]).unwrap_or_else(|err| {
-				eprintln!("<2>Unable to parse chunk as UTF-8: {}", err);
+				eprintln!("<2>Unable to parse chunk as UTF-8: {err}");
 				exit(65);
 			}));
 
@@ -101,7 +101,7 @@ fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, profile: &str, log: &mu
 			"type": "adif",
 			"string": rec
 		})).unwrap_or_else(|err| {
-			eprintln!("<2>Failed to upload log records: {}", err);
+			eprintln!("<2>Failed to upload log records: {err}");
 			exit(74);
 		});
 
@@ -132,7 +132,7 @@ fn main() -> io::Result<()> {
 		eprintln!("Missing CloudLog base URL");
 		exit(64);
 	})).unwrap_or_else(|err| {
-		eprintln!("Failed to construct QSO API URL: {}", err);
+		eprintln!("Failed to construct QSO API URL: {err}");
 		exit(64);
 	});
 
@@ -140,7 +140,7 @@ fn main() -> io::Result<()> {
 		eprintln!("Missing API key file path");
 		exit(64);
 	})).unwrap_or_else(|err| {
-		eprintln!("Failed to read API key: {}", err);
+		eprintln!("Failed to read API key: {err}");
 		exit(66);
 	});
 
@@ -155,18 +155,18 @@ fn main() -> io::Result<()> {
 	});
 
 	let mut log = RecordsReader::new(File::open(&log_path).unwrap_or_else(|err| {
-		eprintln!("Failed to open log file: {}", err);
+		eprintln!("Failed to open log file: {err}");
 		exit(66);
 	}));
 
 	let (tx, rx) = channel();
 	let mut watcher = notify::recommended_watcher(tx).unwrap_or_else(|err| {
-		eprintln!("Failed to set up file watcher: {}", err);
+		eprintln!("Failed to set up file watcher: {err}");
 		exit(71);
 	});
 
 	watcher.watch(Path::new(&log_path), RecursiveMode::NonRecursive).unwrap_or_else(|err| {
-		eprintln!("Unable to watch log file for changes: {}", err);
+		eprintln!("Unable to watch log file for changes: {err}");
 		exit(71);
 	});
 
@@ -176,7 +176,7 @@ fn main() -> io::Result<()> {
 
 	for ev in rx {
 		#[cfg(debug_assertions)]
-		eprintln!("<7>Log file event: {:?}", ev);
+		eprintln!("<7>Log file event: {ev:?}");
 
 		match ev {
 			Ok(Event { kind: EventKind::Modify(ModifyKind::Data(_)), paths: _, attrs: _ }) => {
@@ -189,7 +189,7 @@ fn main() -> io::Result<()> {
 			},
 			Ok(_) => { },
 			Err(err) => {
-				eprintln!("<2>Error detected while watching for file changes: {}", err);
+				eprintln!("<2>Error detected while watching for file changes: {err}");
 				exit(71);
 			}
 		}
