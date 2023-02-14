@@ -17,7 +17,7 @@ categories = ["command-line-utilities"]
 lazy_static = "1.4"
 notify = "5.0"
 regex = "1.7"
-ureq = { version = "2.5", features = ["json"] }
+ureq = { version = "2.5", features = ["json", "native-certs"] }
 url = "2.3"
 
 [profile.release]
