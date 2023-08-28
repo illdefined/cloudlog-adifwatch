@@ -15,10 +15,10 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 lazy_static = "1.4"
-notify = "5.1"
-regex = "1.7"
-ureq = { version = "2.6", features = ["json", "native-certs"] }
-url = "2.3"
+notify = "6.1"
+regex = "1.9"
+ureq = { version = "2.7", features = ["json", "native-certs"] }
+url = "2.4"
 
 [profile.release]
 lto = "thin"
