@@ -1,0 +1,19 @@
+name: Rust Vulnerability Audit
+
+on:
+  push:
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+  schedule:
+    - cron: '0 0 * * MON'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: illdefined/rust@main
+      - run: cargo install --locked cargo-audit
+      - run: cargo audit
