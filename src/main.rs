@@ -17,10 +17,14 @@ use std::result::Result;
 use std::str;
 use std::string::String;
 use std::sync::mpsc::channel;
+use std::time::Duration;
 
 use notify::{Watcher, RecursiveMode, Event, EventKind, event::ModifyKind};
+use serde_json::json;
 use regex::bytes::Regex;
 use ureq::Agent;
+use ureq::http::Uri;
+use ureq::tls::{TlsConfig, RootCerts};
 use url::Url;
 
 /// ADIF records reader
@@ -88,14 +92,9 @@ impl Iterator for RecordsReader {
 }
 
 /// Upload new records from log
-fn upload(agent: &mut ureq::Agent, url: &Url, key: &str, profile: &str, log: &mut RecordsReader) {
+fn upload(agent: &Agent, uri: &Uri, key: &str, profile: &str, log: &mut RecordsReader) {
 	for rec in log {
-		agent.request_url("PUT", url)
-		     .set("User-Agent", concat!(env!("CARGO_PKG_NAME"),
-		                                "/", env!("CARGO_PKG_VERSION_MAJOR"),
-		                                ".", env!("CARGO_PKG_VERSION_MINOR"),
-		                                " (+", env!("CARGO_PKG_REPOSITORY"), ")"))
-		     .send_json(ureq::json!({
+		agent.put(uri).send_json(json!({
 			"key": key,
 			"station_profile_id": profile,
 			"type": "adif",
@@ -114,9 +113,9 @@ fn read_key(path: &str) -> io::Result<String> {
 	Ok(BufReader::new(File::open(path)?).lines().next().unwrap()?.trim().to_string())
 }
 
-/// Construct QSO API URL
-fn api_url(base: &str) -> Result<Url, url::ParseError> {
-	Url::parse(base)?.join("api/qso")
+/// Construct QSO API URI
+fn api_uri(base: &str) -> Result<Uri, url::ParseError> {
+	Ok(Url::parse(base)?.join("api/qso")?.as_str().parse::<Uri>().unwrap())
 }
 
 fn main() -> io::Result<()> {
@@ -128,7 +127,7 @@ fn main() -> io::Result<()> {
 		exit(64);
 	}
 
-	let url = api_url(&args.nth(1).unwrap_or_else(|| {
+	let uri = api_uri(&args.nth(1).unwrap_or_else(|| {
 		eprintln!("Missing CloudLog base URL");
 		exit(64);
 	})).unwrap_or_else(|err| {
@@ -170,9 +169,33 @@ fn main() -> io::Result<()> {
 		exit(71);
 	});
 
-	let mut agent = Agent::new();
+	/// Default time‐out of one minute
+	const TIMEOUT: Duration = Duration::from_secs(60);
+
+	let agent = Agent::config_builder()
+		.https_only(true)
+		// Use platform root certificates
+		.tls_config(TlsConfig::builder().root_certs(RootCerts::PlatformVerifier).build())
+		.no_delay(false)
+		.max_redirects(8)
+		.save_redirect_history(true)
+		.user_agent(concat!(env!("CARGO_PKG_NAME"), "/",
+			env!("CARGO_PKG_VERSION_MAJOR"), ".", env!("CARGO_PKG_VERSION_MINOR"),
+			" (+", env!("CARGO_PKG_REPOSITORY"), ")"))
+		.max_response_header_size(4096)
+		.input_buffer_size(4096)
+		.output_buffer_size(RecordsReader::CHUNK_SIZE)
+		.max_idle_age(Duration::from_secs(900))
+		.timeout_connect(Some(TIMEOUT))
+		.timeout_per_call(Some(TIMEOUT))
+		.timeout_send_request(Some(TIMEOUT))
+		.timeout_send_body(Some(Duration::from_secs(900)))
+		.timeout_recv_response(Some(TIMEOUT))
+		.timeout_recv_body(Some(TIMEOUT))
+		.build()
+		.into();
 	eprintln!("<6>Performing initial full log upload.");
-	upload(&mut agent, &url, &key, &profile, &mut log);
+	upload(&agent, &uri, &key, &profile, &mut log);
 
 	for ev in rx {
 		#[cfg(debug_assertions)]
@@ -181,7 +204,7 @@ fn main() -> io::Result<()> {
 		match ev {
 			Ok(Event { kind: EventKind::Modify(ModifyKind::Data(_)), paths: _, attrs: _ }) => {
 				eprintln!("<6>Change detected in log file. Checking for updates.");
-				upload(&mut agent, &url, &key, &profile, &mut log);
+				upload(&agent, &uri, &key, &profile, &mut log);
 			},
 			Ok(Event { kind: EventKind::Remove(_), paths: _, attrs: _ }) => {
 				eprintln!("<2>Log file has been removed. Bailing out.");
