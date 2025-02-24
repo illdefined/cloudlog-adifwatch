@@ -1,7 +1,7 @@
 [package]
 name = "cloudlog-adifwatch"
 version = "0.0.19"
-authors = ["Mikael Voss <mvs@nya.yt>"]
+authors = ["Mikael Voss <mvs@nya.yt>" ]
 edition = "2021"
 
 description = "Automatic upload of ADIF log to Cloudlog"
