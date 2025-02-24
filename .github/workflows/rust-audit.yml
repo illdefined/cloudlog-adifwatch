@@ -11,9 +11,18 @@ on:
 
 jobs:
   audit:
-    runs-on: ubuntu-latest
+    name: Rust Audit
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-15
+          - windows-2025
+    
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - uses: illdefined/rust@main
-      - run: cargo install --locked cargo-audit
+      - run: cargo install --target "${RUST_TARGET_NATIVE}" --locked cargo-audit
       - run: cargo audit
