@@ -32,3 +32,10 @@ Partial writes to the log file are handled gracefully and only complete records 
 
 The log file is kept open for reading and assumed to be appended to only. Truncation of the log file
 or overwriting of data already written to the log file will likely result in undesired behaviour.
+
+## Intellectual property
+
+This work is dedicated to the public domain under the terms of the
+[CC0 1.0 licence](https://creativecommons.org/publicdomain/zero/1.0/).
+
+The author holds no patent rights related to this work.

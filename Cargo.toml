@@ -8,7 +8,7 @@ description = "Automatic upload of ADIF log to Cloudlog"
 readme = "README.md"
 repository = "https://github.com/illdefined/cloudlog-adifwatch"
 
-license = "MirOS"
+license = "CC0-1.0"
 
 keywords = ["amateur-radio", "adif"]
 categories = ["command-line-utilities"]
