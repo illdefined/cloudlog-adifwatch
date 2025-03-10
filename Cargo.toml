@@ -1,6 +1,6 @@
 [package]
 name = "cloudlog-adifwatch"
-version = "0.0.19"
+version = "0.0.20"
 authors = ["Mikael Voss <mvs@nya.yt>"]
 edition = "2021"
 
