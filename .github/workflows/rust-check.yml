@@ -1,0 +1,32 @@
+name: Rust Checks
+
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+
+jobs:
+  lint:
+    name: Clippy Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: illdefined/rust@main
+      - run: cargo clippy --all-targets --all-features
+  
+  check:
+    name: Rust Check
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-15
+          - windows-2025
+    
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: illdefined/rust@main
+      - run: cargo check
+      - run: cargo test
